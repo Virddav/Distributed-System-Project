@@ -1,0 +1,20 @@
+layout {
+    pane split_direction="vertical" {
+        pane command="python3" {
+	     args "display.py" "-n" "4" "-p" "9000" "-m"
+	}
+        pane command="python3" {
+	     args "display.py" "-n" "4" "-p" "9001" "-m"
+	}
+        pane command="python3" {
+	     args "display.py" "-n" "4" "-p" "9002" "-m"
+	}
+        pane command="python3" {
+	     args "display.py" "-n" "4" "-p" "9003" "-m"
+	}
+    }
+    pane start_suspended=true borderless=true size=3 command="bash" {
+    	 args "-c" "python3 ./player.py 0 9100 & python3 ./player.py 1 9101 & python3 ./player.py 2 9102 & python3 ./player.py 3 9103 & wait"
+	 focus true
+    }
+}
