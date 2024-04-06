@@ -5,14 +5,16 @@ import threading
 import time
 
 class Jeton:
-    def __init__(self, process_id, display_ports, nb_process, distributed_ports):
+    def __init__(self, process_id, nb_process, distributed_ports, display_ports):
         self.process_id = process_id # Personnal ID 
         self.nb_process = nb_process # Total number of process
         self.distributed_ports = distributed_ports # Array with all process ports
         self.display_ports = display_ports # Array with all display ports
+
         self.data = [] # Array used to stock temporarly the player message
         self.waiting_jeton = False 
         self.quit = False # Condition to stop the process
+
         # Last process will have the first jeton and have of neighbor the first process
         self.starting_jeton = False 
         if process_id == nb_process-1:
@@ -21,6 +23,7 @@ class Jeton:
             self.start_time = 0 
         else:
             self.next_process_id = process_id + 1 
+
         self.lock = threading.Lock()
         self.create_distributed()
 
@@ -40,7 +43,7 @@ class Jeton:
                 new_socket, address = self.process_socket.accept()
                 t = threading.Thread(target=self.handle_connection, args=(new_socket,))
                 t.start()
-                t.join() # Join the thread to terminate all the thread at the end
+                t.join()        
         except KeyboardInterrupt:
             print("Server stopped.")
         finally :
@@ -77,7 +80,7 @@ class Jeton:
         self.waiting_jeton = True
         print("Waiting for jeton " + str(data))
 
-    # Function enter_critical_section: Send latest received message to all display 
+    # Function enter_critical_section: Send latest received message to all display and close critical section
     def enter_critical_section(self, nb_moves, nb_message):
         print("Jeton received sending message " + str(self.data[0]))
         for port in self.display_ports:
@@ -138,7 +141,8 @@ class Jeton:
                 print("The game lasted : " + str(time.time()-self.start_time) + " second")
                 print("Serveur ended with jeton sent equal to " + str(int(nb_message))+ "\nSo a total of " + str(int(nb_message) + int(nb_moves)-self.nb_process+1) + " messages circulated during the game")
             else:
-                print("See game duration and number of message transmitted in last process")
+                print("Server ended")
+                print("See game duration and number of messages transmitted in last process")
             self.quit = True
 
 def main():
@@ -155,7 +159,7 @@ def main():
         display_ports.append(int(sys.argv[3+i]))
         distributed_ports.append(int(sys.argv[3+nb_player+i]))
 
-    Jeton(num_id, display_ports, nb_player, distributed_ports)
+    Jeton(num_id, nb_player, distributed_ports, display_ports)
 
 if __name__ == "__main__":
     main()
