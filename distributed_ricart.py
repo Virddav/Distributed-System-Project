@@ -20,10 +20,12 @@ class RicartAgrawala:
 
         self.first_move = True
         self.nb_moves = 0
+        self.request_receive = 0
         self.time_start = 0
         self.nb_message = 0
         self.threads = []
-
+        self.quit = False
+        self.process_ended = [False]*nb_process
         self.lock = threading.Lock()
         self.create_distributed()
 
@@ -36,28 +38,20 @@ class RicartAgrawala:
         print("Serveur "+str(self.process_id)+ " started")
         self.ricart(process_socket)
 
-    # Function start_jeton: Basic fork accepting all connexion in thread for time improvement
+    # Function start_jeton: Fork accepting all connexion in thread for time improvement
+    # End when all process terminated
     def ricart(self, process_socket):
         try:
-            while True:
+            while not all(ended for ended in self.process_ended):
                 new_socket, address = process_socket.accept()
-                t = threading.Thread(target=self.handle_connection, args=(new_socket,)).start()
-                self.threads.append(t)
-                if self.nb_message == (self.nb_process-1) * 20 and self.all_threads_terminated:
-                    new_socket.close()
-                    print("Temps mis " + str(time.time()+ self.time_start))
-                    print("Nombre de message : " +  str(self.nb_message))
-                    break
+                t = threading.Thread(target=self.handle_connection, args=(new_socket,))
+                t.start()
         except KeyboardInterrupt:
             print("Server stopped.")
         finally :
             process_socket.close()
-
-    def all_threads_terminated(self):
-        for thread in self.threads:
-            if thread.is_alive():
-                return False
-        return True
+            print("Temps mis " + str(time.time()- self.time_start))
+            print("Nombre de message : " +  str(self.nb_message))
     
     # Function handle_connection: Receive and handle the message,
     # If the message is from a player, request for critical section
@@ -76,6 +70,7 @@ class RicartAgrawala:
                 self.clock = max(self.clock, timestamp) + 1 
                 # Handling Request
                 if message_type == "REQUEST":
+                    self.request_receive += 1
                     if not self.requesting_critical_section:
                         self.send_reply(sender_id)
                     elif (timestamp, sender_id) < self.request_queue[0]:
@@ -90,6 +85,11 @@ class RicartAgrawala:
                             break
                     if all(approval for approval in self.list_approval[0]):
                         self.enter_critical_section()
+            # Handling ending process
+            elif data.decode()[0] == "E":
+                message_type,sender_id,nb = data.decode().split(":")
+                self.process_ended[int(sender_id)] = True
+                self.nb_message += int(nb)
             # Handling player message
             else:
                 self.request_critical_section(data)
@@ -122,6 +122,7 @@ class RicartAgrawala:
                     print("Couldn't transmit message : " + self.data[0].decode())
                 finally:
                     s.close()
+        self.nb_moves += 1
         self.close_critical()
 
     # Function close_critical: Remove latest message and his request associated
@@ -145,12 +146,17 @@ class RicartAgrawala:
                     z+=1
         self.closing_server()
 
-    # Function closing_server: Check if his player ended 
+    # Function closing_server: Manage start and ending configuration
+    # if his player sent the first move he start the timer
+    # if his player ended his 10 moves he send a message to other process to signal ending
     def closing_server(self):
         if self.nb_moves == 1:
             self.time_start = time.time()
         elif self.nb_moves == 10:
-            self.quit == True
+            self.process_ended[int(self.process_id)] = True
+            for i in range(self.nb_process):
+                if i != self.process_id:
+                    self.send_message(i,"END:"+str(self.process_id)+":"+str(self.nb_message))
 
         
     # Function send_request: Used to send request to others process
@@ -171,7 +177,7 @@ class RicartAgrawala:
                 s.connect(("localhost", self.distributed_ports[send_id]))
                 s.send(message.encode())
             except ConnectionRefusedError:
-                print("Couldn't transmit message : "+ message)
+                print("Couldn't transmit message : " + message)
             finally:
                 s.close()
 
