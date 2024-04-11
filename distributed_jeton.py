@@ -19,10 +19,11 @@ class Jeton:
         self.starting_jeton = False 
         if process_id == nb_process-1:
             self.next_process_id = 0
-            self.starting_jeton = True
-            self.start_time = 0 
         else:
             self.next_process_id = process_id + 1 
+        if process_id == 0:
+            self.starting_jeton = True
+            self.start_time = 0 
 
         self.lock = threading.Lock()
         self.create_distributed()
@@ -70,9 +71,9 @@ class Jeton:
             new_socket.close() # close the socket at the end
     
     # Function prepare_critical_section: Stock the data and wait for the jeton
-    #  If it's first received message of the last process send the jeton 
+    # If it's first received message of the last process send the jeton 
     def prepare_critical_section(self, data):
-        if self.process_id == self.nb_process-1 and self.starting_jeton:
+        if self.process_id == 0 and self.starting_jeton:
             self.send_jeton(0,0)
             self.starting_jeton = False
             self.start_time = time.time()
@@ -112,11 +113,11 @@ class Jeton:
             # Checking if the game has ended, if yes we send last jeton and end the process using self.quit
             if int(nb_moves) >= self.nb_process * 10:
                 print("Serveur ended")
-                if self.process_id == self.nb_process-1:
+                if self.process_id == 0:
                     print("The game lasted : " + str(time.time()-self.start_time)+ " second")
-                    print("Serveur ended with jeton sent equal to " + str(int(nb_message))+ "\nSo a total of " + str(int(nb_message)+ (self.nb_process*10)) + " messages circulated during the game")
+                    print("Serveur ended with jeton sent equal to " + str(int(nb_message)))
                 else:
-                    print("See game duration and number of message transmitted in last process")
+                    print("See game duration and number of message transmitted in process 0")
                 self.quit = True 
                 message = "JETON:" + str(int(nb_moves)+1) +":"+ str(nb_message)
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -137,12 +138,12 @@ class Jeton:
                     finally:
                         s.close()
         else:
-            if self.process_id == self.nb_process-1:
+            if self.process_id == 0:
                 print("The game lasted : " + str(time.time()-self.start_time) + " second")
-                print("Serveur ended with jeton sent equal to " + str(int(nb_message))+ "\nSo a total of " + str(int(nb_message) + int(nb_moves)-self.nb_process+1) + " messages circulated during the game")
+                print("Serveur ended with jeton sent equal to " + str(int(nb_message)))
             else:
                 print("Server ended")
-                print("See game duration and number of messages transmitted in last process")
+                print("See game duration and number of messages transmitted in process 0")
             self.quit = True
 
 def main():
