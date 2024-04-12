@@ -54,6 +54,7 @@ class RicartAgrawala:
             process_socket.close()
             print("Time between the first message receive from player on this process and last process closure message received : " + str(time.time()- self.time_start))
             print("Number of message sent by this process : " +  str(self.nb_messages)+"\nmoves = 10*nb_display ; requests = 10*(nb_process-1) ; replies = 10*(nb_process-1) ; ending message = nb_process-1")
+            print("Total number of messages who circulated during the game " + str((self.nb_process*10)+(self.nb_messages*self.nb_process))+ "(player message = 10*nb_process)")
     
     # Function handle_connection: Receive and handle the message,
     # If the message is from a player, request for critical section

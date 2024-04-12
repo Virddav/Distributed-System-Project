@@ -115,7 +115,7 @@ class Jeton:
                 print("Serveur ended")
                 if self.process_id == 0:
                     print("The game lasted : " + str(time.time()-self.start_time)+ " second")
-                    print("Serveur ended with jeton sent equal to " + str(int(nb_message)))
+                    print("Serveur ended with jeton sent equal to " + str(int(nb_message)) +"\nTotal number of message is " + str(int(nb_message)+ self.nb_process*20))
                 else:
                     print("See game duration and number of message transmitted in process 0")
                 self.quit = True 
@@ -140,7 +140,7 @@ class Jeton:
         else:
             if self.process_id == 0:
                 print("The game lasted : " + str(time.time()-self.start_time) + " second")
-                print("Serveur ended with jeton sent equal to " + str(int(nb_message)))
+                print("Serveur ended with jeton sent equal to " + str(int(nb_message)) +"\nTotal number of messages who circulated during the game is " + str(int(nb_message)+ self.nb_process*20))
             else:
                 print("Server ended")
                 print("See game duration and number of messages transmitted in process 0")
